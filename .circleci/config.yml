@@ -1,0 +1,71 @@
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Run tests
+          command: echo 'replace me with real tests!' && false
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Build an artifact
+          command: touch example.txt
+      - store_artifacts:
+          path: example.txt
+  deploy:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: deploy
+          command: "#e.g. ./deploy.sh"
+      - run:
+          name: found github actions config
+          command: ":"
+  eval-default-python:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            
+            pip install --user pipenv
+            pip install -r requirements.txt
+      - evals/eval:
+          circle_pipeline_id: << pipeline.id >>
+          cmd: python evals.py
+workflows:
+  example:
+    jobs:
+      - test:
+          context:
+            - OpenAI-context
+            - Supabase-https://api.openai.com/v1
+      - build:
+          requires:
+            - test
+          context:
+            - OpenAI-context
+            - Supabase-https://api.openai.com/v1
+      - deploy:
+          requires:
+            - test
+          context:
+            - OpenAI-context
+            - Supabase-https://api.openai.com/v1
+  evals:
+    jobs:
+      - eval-default-python:
+          context:
+            - OpenAI-context
+            - Supabase-https://api.openai.com/v1
+orbs:
+  evals: circleci/evals@1.0
